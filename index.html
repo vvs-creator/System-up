@@ -697,12 +697,21 @@
 
       try{
         const loaded = JSON.parse(text);
+
         data = {
           ...defaultData,
           ...loaded,
           profile: { ...defaultData.profile, ...(loaded.profile || {}) },
           achievements: { ...defaultData.achievements, ...(loaded.achievements || {}) }
         };
+
+        if(data.lastDate !== today()){
+          data.lastDate = today();
+          data.water = 0;
+          data.food = 0;
+          data.dayFinalized = false;
+        }
+
         save();
         updateLevel();
         render();
