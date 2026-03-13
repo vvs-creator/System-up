@@ -41,6 +41,11 @@ border-radius:8px;
 cursor:pointer;
 }
 
+button:disabled{
+opacity:0.4;
+cursor:not-allowed;
+}
+
 input,select{
 width:100%;
 padding:10px;
@@ -103,6 +108,7 @@ border-bottom:1px solid #00eaff22;
 </div>
 
 <div id="profilePanel" class="panel" style="display:none;">
+
 <h3>PERFIL</h3>
 
 <input id="profileName" placeholder="Nome">
@@ -121,6 +127,8 @@ border-bottom:1px solid #00eaff22;
 <p>Total de dias: <span id="statDays">0</span></p>
 <p>Melhor streak: <span id="statBestStreak">0</span></p>
 <p>Média geral: <span id="statAverage">0</span>%</p>
+<p>Dias acima de 65%: <span id="statGoodDays">0</span></p>
+<p>Dias perfeitos: <span id="statPerfectDays">0</span></p>
 
 </div>
 
@@ -149,6 +157,51 @@ border-bottom:1px solid #00eaff22;
 <button id="addWaterBtn">Adicionar</button>
 
 <p>Total: <span id="waterTotal">0</span> ml</p>
+
+</div>
+
+<div class="panel">
+
+<h3>ATRIBUTOS</h3>
+
+<select id="exercise">
+<option value="10">Exercício Muito ruim</option>
+<option value="25">Exercício Ruim</option>
+<option value="50">Exercício Bom</option>
+<option value="75">Exercício Muito bom</option>
+<option value="100">Exercício Excelente</option>
+</select>
+
+<select id="meditation">
+<option value="10">Meditação Muito ruim</option>
+<option value="25">Meditação Ruim</option>
+<option value="50">Meditação Boa</option>
+<option value="75">Meditação Muito boa</option>
+<option value="100">Meditação Excelente</option>
+</select>
+
+<select id="fun">
+<option value="10">Lazer Muito ruim</option>
+<option value="25">Lazer Ruim</option>
+<option value="50">Lazer Bom</option>
+<option value="75">Lazer Muito bom</option>
+<option value="100">Lazer Excelente</option>
+</select>
+
+<select id="sleep">
+<option value="25">Sono Ruim</option>
+<option value="50">Sono Normal</option>
+<option value="75">Sono Bom</option>
+<option value="100">Sono Excelente</option>
+</select>
+
+<select id="discipline">
+<option value="10">Disciplina Muito ruim</option>
+<option value="25">Disciplina Ruim</option>
+<option value="50">Disciplina Boa</option>
+<option value="75">Disciplina Muito boa</option>
+<option value="100">Disciplina Excelente</option>
+</select>
 
 </div>
 
@@ -188,29 +241,57 @@ const GOOGLE_CLIENT_ID="27733815895-qf1njapvbrvc7rsfenp1pekbah57fs09.apps.google
 
 let googleToken=null
 
-let data={
+const defaultData={
 profile:{name:"",age:"",weight:"",height:""},
 xp:0,
 level:1,
 streak:0,
+bestStreak:0,
 water:0,
 food:0,
-history:[]
+lastDate:"",
+dayFinalized:false,
+history:[],
+achievements:{
+firstWin:false,
+streak3:false,
+streak7:false,
+streak30:false,
+waterMaster:false,
+level2:false
+}
 }
 
-function el(id){
-return document.getElementById(id)
-}
+let data=JSON.parse(JSON.stringify(defaultData))
 
-function save(){
-localStorage.setItem(STORAGE,JSON.stringify(data))
-}
+function el(id){return document.getElementById(id)}
 
 function today(){
 return new Date().toISOString().slice(0,10)
 }
 
+function resetIfNewDay(){
+
+if(data.lastDate!==today()){
+
+data.lastDate=today()
+data.water=0
+data.food=0
+data.dayFinalized=false
+
+}
+
+}
+
+function save(){
+
+localStorage.setItem(STORAGE,JSON.stringify(data))
+
+}
+
 function addWater(){
+
+if(data.dayFinalized)return
 
 const value=parseInt(el("waterInput").value)
 
@@ -221,12 +302,13 @@ data.water+=value
 el("waterInput").value=""
 
 save()
-
 render()
 
 }
 
 function addFood(value){
+
+if(data.dayFinalized)return
 
 data.food+=value
 
@@ -234,7 +316,6 @@ if(data.food>100)data.food=100
 if(data.food<0)data.food=0
 
 save()
-
 render()
 
 }
@@ -244,12 +325,14 @@ function liveScore(){
 const waterPercent=Math.min((data.water/3000)*100,100)
 
 const total=(
-
 waterPercent+
+Number(el("exercise").value)+
+Number(el("meditation").value)+
 data.food+
-50+50+50+50
-
-)/6
+Number(el("fun").value)+
+Number(el("sleep").value)+
+Number(el("discipline").value)
+)/7
 
 return Math.round(total)
 
@@ -267,6 +350,8 @@ el("goalFill").style.width=Math.min((score/65)*100,100)+"%"
 
 function finalizeDay(){
 
+if(data.dayFinalized)return
+
 const score=liveScore()
 
 let xpGain=0
@@ -279,6 +364,8 @@ data.streak++
 
 data.xp+=xpGain
 
+if(data.streak>data.bestStreak)data.bestStreak=data.streak
+
 }else{
 
 data.streak=0
@@ -286,6 +373,8 @@ data.streak=0
 }
 
 data.level=Math.floor(data.xp/50)+1
+
+data.dayFinalized=true
 
 data.history.unshift({
 date:today(),
@@ -296,9 +385,7 @@ xp:xpGain
 if(data.history.length>60)data.history=data.history.slice(0,60)
 
 save()
-
 render()
-
 uploadSaveToDrive()
 
 }
@@ -307,10 +394,10 @@ function render(){
 
 el("playerName").innerText=data.profile.name||"---"
 
-el("profileName").value=data.profile.name||""
-el("profileAge").value=data.profile.age||""
-el("profileWeight").value=data.profile.weight||""
-el("profileHeight").value=data.profile.height||""
+el("profileName").value=data.profile.name
+el("profileAge").value=data.profile.age
+el("profileWeight").value=data.profile.weight
+el("profileHeight").value=data.profile.height
 
 el("level").innerText=data.level
 el("xp").innerText=data.xp
@@ -322,6 +409,14 @@ el("foodTotal").innerText=data.food
 updateScore()
 
 renderHistory()
+renderStats()
+renderAchievements()
+
+if(data.dayFinalized){
+
+["waterInput","addWaterBtn","finalizeBtn"].forEach(id=>el(id).disabled=true)
+
+}
 
 }
 
@@ -333,24 +428,52 @@ el("historyList").innerHTML=data.history.map(item=>`
 
 }
 
+function renderAchievements(){
+
+const a=data.achievements
+
+el("achievementsList").innerHTML=`
+
+<div class="achievement ${a.firstWin?"":"locked"}">Primeira Vitória</div>
+<div class="achievement ${a.streak3?"":"locked"}">Disciplina Inicial</div>
+<div class="achievement ${a.streak7?"":"locked"}">Foco Inabalável</div>
+<div class="achievement ${a.streak30?"":"locked"}">Lenda da Disciplina</div>
+<div class="achievement ${a.waterMaster?"":"locked"}">Hidratado</div>
+<div class="achievement ${a.level2?"":"locked"}">Primeiro Level Up</div>
+
+`
+
+}
+
+function renderStats(){
+
+const days=data.history.length
+
+let avg=0
+let good=0
+let perfect=0
+
+data.history.forEach(item=>{
+avg+=item.score
+if(item.score>=65)good++
+if(item.score===100)perfect++
+})
+
+if(days>0)avg=Math.round(avg/days)
+
+el("statDays").innerText=days
+el("statBestStreak").innerText=data.bestStreak
+el("statAverage").innerText=avg
+el("statGoodDays").innerText=good
+el("statPerfectDays").innerText=perfect
+
+}
+
 function togglePanel(id){
 
 const panel=el(id)
 
 panel.style.display=panel.style.display==="none"?"block":"none"
-
-}
-
-function saveProfile(){
-
-data.profile.name=el("profileName").value
-data.profile.age=el("profileAge").value
-data.profile.weight=el("profileWeight").value
-data.profile.height=el("profileHeight").value
-
-save()
-
-render()
 
 }
 
@@ -360,7 +483,6 @@ btn.onclick=()=>addFood(Number(btn.dataset.food))
 
 el("addWaterBtn").onclick=addWater
 el("finalizeBtn").onclick=finalizeDay
-el("saveProfileBtn").onclick=saveProfile
 
 el("btnAchievements").onclick=()=>togglePanel("achievementsPanel")
 el("btnProfile").onclick=()=>togglePanel("profilePanel")
@@ -400,9 +522,7 @@ await fetch(
 "https://www.googleapis.com/upload/drive/v3/files?uploadType=media",
 {
 method:"POST",
-headers:{
-Authorization:"Bearer "+googleToken
-},
+headers:{Authorization:"Bearer "+googleToken},
 body:file
 }
 )
@@ -413,9 +533,7 @@ async function loadSaveFromDrive(){
 
 const search=await fetch(
 "https://www.googleapis.com/drive/v3/files?q=name='systemup-save.json' and trashed=false&fields=files(id,name)",
-{
-headers:{Authorization:"Bearer "+googleToken}
-}
+{headers:{Authorization:"Bearer "+googleToken}}
 )
 
 const result=await search.json()
@@ -426,12 +544,12 @@ const fileId=result.files[0].id
 
 const file=await fetch(
 "https://www.googleapis.com/drive/v3/files/"+fileId+"?alt=media",
-{
-headers:{Authorization:"Bearer "+googleToken}
-}
+{headers:{Authorization:"Bearer "+googleToken}}
 )
 
 data=JSON.parse(await file.text())
+
+resetIfNewDay()
 
 render()
 
