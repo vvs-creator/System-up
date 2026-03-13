@@ -88,6 +88,12 @@ padding:6px 0;
 border-bottom:1px solid #00eaff22;
 }
 
+.driveStatus{
+font-size:12px;
+color:#7fdbe6;
+margin-top:6px;
+}
+
 </style>
 </head>
 
@@ -108,7 +114,6 @@ border-bottom:1px solid #00eaff22;
 </div>
 
 <div id="profilePanel" class="panel" style="display:none;">
-
 <h3>PERFIL</h3>
 
 <input id="profileName" placeholder="Nome">
@@ -146,7 +151,7 @@ border-bottom:1px solid #00eaff22;
 <div id="goalFill" class="goalFill"></div>
 </div>
 
-<div id="driveStatus" style="font-size:12px;color:#7fdbe6;margin-top:6px;">
+<div id="driveStatus" class="driveStatus">
 Drive desconectado
 </div>
 
@@ -240,7 +245,6 @@ Drive desconectado
 <script>
 
 const STORAGE="systemup"
-
 const GOOGLE_CLIENT_ID="27733815895-qf1njapvbrvc7rsfenp1pekbah57fs09.apps.googleusercontent.com"
 
 let googleToken=null
@@ -288,9 +292,7 @@ data.dayFinalized=false
 }
 
 function save(){
-
 localStorage.setItem(STORAGE,JSON.stringify(data))
-
 }
 
 function addWater(){
@@ -347,7 +349,6 @@ function updateScore(){
 const score=liveScore()
 
 el("liveScore").innerText=score
-
 el("goalFill").style.width=Math.min((score/65)*100,100)+"%"
 
 }
@@ -363,9 +364,7 @@ let xpGain=0
 if(score>=65){
 
 xpGain=10
-
 data.streak++
-
 data.xp+=xpGain
 
 if(data.streak>data.bestStreak)data.bestStreak=data.streak
@@ -390,6 +389,9 @@ if(data.history.length>60)data.history=data.history.slice(0,60)
 
 save()
 render()
+
+document.getElementById("driveStatus").innerText="Backup atualizado no Drive"
+
 uploadSaveToDrive()
 
 }
@@ -497,12 +499,13 @@ function loginGoogle(){
 google.accounts.oauth2.initTokenClient({
 
 client_id:GOOGLE_CLIENT_ID,
-
 scope:"https://www.googleapis.com/auth/drive.file",
 
 callback:async(tokenResponse)=>{
 
 googleToken=tokenResponse.access_token
+
+document.getElementById("driveStatus").innerText="Drive conectado"
 
 await loadSaveFromDrive()
 
@@ -555,6 +558,8 @@ data=JSON.parse(await file.text())
 
 resetIfNewDay()
 
+document.getElementById("driveStatus").innerText="Save carregado do Drive"
+
 render()
 
 }
@@ -565,4 +570,3 @@ render()
 
 </body>
 </html>
-
