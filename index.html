@@ -1,8 +1,10 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
+
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <title>System Up</title>
 
 <script src="https://accounts.google.com/gsi/client" async defer></script>
@@ -84,6 +86,7 @@ opacity:0.35;
 }
 
 </style>
+
 </head>
 
 <body>
@@ -93,18 +96,19 @@ opacity:0.35;
 <h1>SYSTEM UP</h1>
 
 <button id="googleLogin">☁ Conectar Google Drive</button>
-<button id="btnAchievements">🏅 CONQUISTAS</button>
-<button id="btnProfile">👤 PERFIL</button>
-<button id="btnStats">📊 ESTATÍSTICAS</button>
-<button id="btnHistory">📜 HISTÓRICO</button>
+<button id="btnAchievements">🏅 Conquistas</button>
+<button id="btnProfile">👤 Perfil</button>
+<button id="btnStats">📊 Estatísticas</button>
+<button id="btnHistory">📜 Histórico</button>
 
-<div id="achievementsPanel" class="panel" style="display:none;">
-<h3>MEDALHAS</h3>
+<div id="achievementsPanel" class="panel" style="display:none">
+<h3>Conquistas</h3>
 <div id="achievementsList"></div>
 </div>
 
-<div id="profilePanel" class="panel" style="display:none;">
-<h3>PERFIL</h3>
+<div id="profilePanel" class="panel" style="display:none">
+
+<h3>Perfil</h3>
 
 <input id="profileName" placeholder="Nome">
 <input id="profileAge" placeholder="Idade">
@@ -115,9 +119,9 @@ opacity:0.35;
 
 </div>
 
-<div id="statsPanel" class="panel" style="display:none;">
+<div id="statsPanel" class="panel" style="display:none">
 
-<h3>ESTATÍSTICAS</h3>
+<h3>Estatísticas</h3>
 
 <p>Total de dias: <span id="statDays">0</span></p>
 <p>Melhor streak: <span id="statBestStreak">0</span></p>
@@ -127,9 +131,11 @@ opacity:0.35;
 
 </div>
 
-<div id="historyPanel" class="panel" style="display:none;">
-<h3>HISTÓRICO</h3>
+<div id="historyPanel" class="panel" style="display:none">
+
+<h3>Histórico</h3>
 <div id="historyList"></div>
+
 </div>
 
 <div class="panel">
@@ -147,7 +153,7 @@ opacity:0.35;
 </div>
 
 <div id="driveStatus" class="driveStatus">
-Modo offline
+🔵 Online
 </div>
 
 </div>
@@ -221,7 +227,9 @@ Modo offline
 </div>
 
 <div class="panel">
+
 <button id="saveBtn">SALVAR</button>
+
 </div>
 
 </div>
@@ -230,24 +238,25 @@ Modo offline
 
 let googleToken=null
 
+function el(id){
+return document.getElementById(id)
+}
+
 function setDriveStatus(text){
-document.getElementById("driveStatus").innerText=text
+el("driveStatus").innerText=text
 }
 
 function updateConnectionStatus(){
 
-if(navigator.onLine){
+if(!navigator.onLine){
+setDriveStatus("🟡 Offline (salvando localmente)")
+return
+}
 
 if(googleToken){
 setDriveStatus("🟢 Drive conectado")
 }else{
-setDriveStatus("🟡 Online (conecte o Drive)")
-}
-
-}else{
-
-setDriveStatus("🟡 Offline (salvando localmente)")
-
+setDriveStatus("🔵 Online (conecte o Drive)")
 }
 
 }
@@ -255,7 +264,83 @@ setDriveStatus("🟡 Offline (salvando localmente)")
 window.addEventListener("online",updateConnectionStatus)
 window.addEventListener("offline",updateConnectionStatus)
 
+let data={
+profile:{name:"",age:"",weight:"",height:""},
+xp:0,
+level:1,
+streak:0,
+water:0,
+food:0,
+history:[]
+}
+
+function render(){
+
+el("playerName").innerText=data.profile.name||"---"
+el("level").innerText=data.level
+el("xp").innerText=data.xp
+el("streak").innerText=data.streak
+el("waterTotal").innerText=data.water
+el("foodTotal").innerText=data.food
+
+}
+
+function addWater(){
+
+const value=parseInt(el("waterInput").value)
+
+if(!value)return
+
+data.water+=value
+
+el("waterInput").value=""
+
+render()
+
+}
+
+function addFood(value){
+
+data.food+=value
+
+if(data.food>100)data.food=100
+if(data.food<0)data.food=0
+
+render()
+
+}
+
+document.querySelectorAll(".foodBtn").forEach(btn=>{
+btn.onclick=()=>addFood(Number(btn.dataset.food))
+})
+
+el("addWaterBtn").onclick=addWater
+
+function loginGoogle(){
+
+google.accounts.oauth2.initTokenClient({
+
+client_id:"27733815895-qf1njapvbrvc7rsfenp1pekbah57fs09.apps.googleusercontent.com",
+
+scope:"https://www.googleapis.com/auth/drive.file",
+
+callback:async(tokenResponse)=>{
+
+googleToken=tokenResponse.access_token
+
+setDriveStatus("🟢 Drive conectado")
+
+}
+
+}).requestAccessToken()
+
+}
+
+el("googleLogin").onclick=loginGoogle
+
 updateConnectionStatus()
+
+render()
 
 </script>
 
