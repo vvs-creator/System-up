@@ -236,38 +236,27 @@ margin-top:6px;
 
 <script>
 
-const STORAGE="systemup";
-const GOOGLE_CLIENT_ID="27733815895-qf1njapvbrvc7rsfenp1pekbah57fs09.apps.googleusercontent.com";
-
-let googleToken=null;
-let currentDriveFileId=null;
-let syncTimeout=null;
-
-function el(id){
-return document.getElementById(id);
-}
+/* DETECTOR DE CONEXÃO (NÃO AFETA O RESTO DO SISTEMA) */
 
 function setDriveStatus(text){
-el("driveStatus").innerText=text;
+document.getElementById("driveStatus").innerText=text
 }
 
 function updateConnectionStatus(){
 
 if(!navigator.onLine){
-setDriveStatus("🟡 Offline (salvando localmente)");
-return;
+setDriveStatus("🟡 Offline (salvando localmente)")
+return
 }
 
-if(googleToken){
-setDriveStatus("🟢 Drive conectado");
-}else{
-setDriveStatus("🔵 Online (Drive desconectado)");
-}
+setDriveStatus("🔵 Online (Drive desconectado)")
 
 }
 
-window.addEventListener("online",updateConnectionStatus);
-window.addEventListener("offline",updateConnectionStatus);
+window.addEventListener("online",updateConnectionStatus)
+window.addEventListener("offline",updateConnectionStatus)
+
+updateConnectionStatus()
 
 </script>
 
